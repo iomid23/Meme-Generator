@@ -5,9 +5,11 @@ import ImageUploader from "./components/ImageUploader";
 
 function App() {
   return (
-    <div className="flex h-screen flex-col items-center justify-center bg-slate-900 p-12">
-      <Meme />
-      <ImageUploader />
+    <div className="flex justify-center bg-slate-900 flex-col items-center">
+      <div className="max-w-lg">
+        <Meme />
+        <ImageUploader />
+      </div>
     </div>
   );
 }

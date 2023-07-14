@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
+import { ChromePicker } from "react-color";
+import Draggable from "react-draggable";
 
 function Meme() {
   const [memes, setMemes] = useState([]);
@@ -7,6 +9,8 @@ function Meme() {
   const [topText, setTopText] = useState("");
   const [bottomText, setBottomText] = useState("");
   const [generatedImage, setGeneratedImage] = useState(null);
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [textSize, setTextSize] = useState(24);
   const memeRef = useRef(null);
 
   useEffect(() => {
@@ -50,26 +54,44 @@ function Meme() {
     setGeneratedImage(null);
   }
 
+  function handleTextColorChange(color) {
+    setTextColor(color.hex);
+  }
+
+  function handleTextSizeChange(event) {
+    setTextSize(parseInt(event.target.value));
+  }
+
   return memes.length ? (
     <div className="container mx-auto mt-8 max-w-lg">
-      <div className="relative flex items-center justify-center">
+      <div className="relative">
         <img
-          className="max-h-96 w-full rounded object-cover"
+          className="w-full"
           src={memes[memeIndex].url}
           alt="meme"
           ref={memeRef}
         />
-        <div className="pointer-events-none absolute left-0 top-0 flex h-full w-full flex-col items-center justify-center">
-          <p className="text-center text-lg font-bold text-white">{topText}</p>
-          <p className="text-center text-lg font-bold text-white">
+        <Draggable>
+          <p
+            className="text-center font-bold"
+            style={{ color: textColor, fontSize: textSize }}
+          >
+            {topText}
+          </p>
+        </Draggable>
+        <Draggable>
+          <p
+            className="text-center font-bold"
+            style={{ color: textColor, fontSize: textSize }}
+          >
             {bottomText}
           </p>
-        </div>
+        </Draggable>
       </div>
 
       <input
         type="text"
-        className="mb-4 mt-4 w-full rounded border border-gray-300 p-2 focus:outline-none"
+        className="mb-4 w-full rounded border border-gray-300 p-2 focus:outline-none"
         placeholder="Top Text"
         value={topText}
         onChange={handleTopTextChange}
@@ -98,10 +120,10 @@ function Meme() {
         </button>
       </div>
 
-      <div className="my-4 flex justify-center">
+      <div className="my-4 flex items-center justify-center">
         <button
           onClick={handleGenerateMemeClick}
-          className="rounded bg-purple-700 px-4 py-2 text-white"
+          className="rounded bg-blue-500 px-4 py-2 text-white"
         >
           Generate Meme
         </button>
@@ -126,6 +148,27 @@ function Meme() {
           </a>
         </div>
       )}
+
+      <div className="mt-4 flex items-center justify-center">
+        <div className="mr-4">
+          <ChromePicker
+            color={textColor}
+            onChange={handleTextColorChange}
+            disableAlpha={true}
+            className="rounded-lg"
+          />
+        </div>
+        <label htmlFor="textSize" className="text-white">
+          Text Size:
+        </label>
+        <input
+          type="number"
+          id="textSize"
+          className="ml-2 rounded border border-gray-300 p-2 focus:outline-none"
+          value={textSize}
+          onChange={handleTextSizeChange}
+        />
+      </div>
     </div>
   ) : (
     <div>Loading...</div>
