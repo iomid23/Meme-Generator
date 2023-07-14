@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
+import domToImage from "dom-to-image";
 import { ChromePicker } from "react-color";
-import Draggable from "react-draggable";
 
 function Meme() {
   const [memes, setMemes] = useState([]);
@@ -12,6 +11,10 @@ function Meme() {
   const [textColor, setTextColor] = useState("#ffffff");
   const [textSize, setTextSize] = useState(24);
   const memeRef = useRef(null);
+  const topTextRef = useRef(null);
+  const bottomTextRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     fetch("https://api.imgflip.com/get_memes")
@@ -22,6 +25,17 @@ function Meme() {
       })
       .catch((error) => console.log(error));
   }, []);
+
+  useEffect(() => {
+    if (generatedImage) {
+      const downloadLink = document.createElement("a");
+      downloadLink.href = generatedImage;
+      downloadLink.download = "meme.png";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  }, [generatedImage]);
 
   function handleTopTextChange(event) {
     setTopText(event.target.value);
@@ -42,10 +56,14 @@ function Meme() {
   }
 
   function handleGenerateMemeClick() {
-    html2canvas(memeRef.current).then((canvas) => {
-      const generatedImageUrl = canvas.toDataURL("image/png");
-      setGeneratedImage(generatedImageUrl);
-    });
+    domToImage
+      .toPng(memeRef.current, { quality: 1 })
+      .then((dataUrl) => {
+        setGeneratedImage(dataUrl);
+      })
+      .catch((error) => {
+        console.log("Error generating meme:", error);
+      });
   }
 
   function handleResetClick() {
@@ -62,31 +80,61 @@ function Meme() {
     setTextSize(parseInt(event.target.value));
   }
 
+  function handleDragStart(event) {
+    setDragging(true);
+    const { offsetLeft, offsetTop } = event.target;
+    const { clientX, clientY } = event.touches ? event.touches[0] : event;
+    setDragOffset({
+      x: clientX - offsetLeft,
+      y: clientY - offsetTop,
+    });
+  }
+
+  function handleDragMove(event) {
+    if (!dragging) return;
+    event.preventDefault();
+    const { clientX, clientY } = event.touches ? event.touches[0] : event;
+    const { x, y } = dragOffset;
+    const newX = clientX - x;
+    const newY = clientY - y;
+    event.target.style.transform = `translate(${newX}px, ${newY}px)`;
+  }
+
+  function handleDragEnd() {
+    setDragging(false);
+  }
+
   return memes.length ? (
     <div className="container mx-auto mt-8 max-w-lg">
-      <div className="relative">
-        <img
-          className="w-full"
-          src={memes[memeIndex].url}
-          alt="meme"
-          ref={memeRef}
-        />
-        <Draggable>
-          <p
-            className="text-center font-bold"
-            style={{ color: textColor, fontSize: textSize }}
-          >
-            {topText}
-          </p>
-        </Draggable>
-        <Draggable>
-          <p
-            className="text-center font-bold"
-            style={{ color: textColor, fontSize: textSize }}
-          >
-            {bottomText}
-          </p>
-        </Draggable>
+      <div
+        className="relative"
+        ref={memeRef}
+        onTouchMove={handleDragMove}
+        onTouchEnd={handleDragEnd}
+        onMouseMove={handleDragMove}
+        onMouseUp={handleDragEnd}
+      >
+        <img className="w-full" src={memes[memeIndex].url} alt="meme" />
+
+        <p
+          className="text-center font-bold"
+          style={{ color: textColor, fontSize: textSize, position: "absolute", top: 0, left: 0 }}
+          ref={topTextRef}
+          onTouchStart={handleDragStart}
+          onMouseDown={handleDragStart}
+        >
+          {topText}
+        </p>
+
+        <p
+          className="text-center font-bold"
+          style={{ color: textColor, fontSize: textSize, position: "absolute", bottom: 0, left: 0 }}
+          ref={bottomTextRef}
+          onTouchStart={handleDragStart}
+          onMouseDown={handleDragStart}
+        >
+          {bottomText}
+        </p>
       </div>
 
       <input
